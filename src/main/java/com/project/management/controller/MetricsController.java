@@ -5,20 +5,19 @@ import com.project.management.dto.DashboardMetricsDTO;
 import com.project.management.dto.MetricsPublishDTO;
 import com.project.management.service.MetricsService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/metrics")
 @Slf4j
 public class MetricsController {
     private final MetricsService metricsService;
 
-    public MetricsController(MetricsService metricsService) {
-        this.metricsService = metricsService;
-    }
 
     @GetMapping("/dashboard")
     @PreAuthorize("hasAuthority(@roleProperties.adminRole)")

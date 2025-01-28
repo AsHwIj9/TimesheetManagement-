@@ -3,6 +3,7 @@ package com.project.management.controller;
 import com.project.management.dto.*;
 import com.project.management.service.ProjectService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,15 +11,13 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/projects")
 @Slf4j
 public class ProjectController {
     private final ProjectService projectService;
 
-    public ProjectController(ProjectService projectService) {
-        this.projectService = projectService;
-    }
 
     @PostMapping
     @PreAuthorize("hasAuthority(@roleProperties.adminRole)")

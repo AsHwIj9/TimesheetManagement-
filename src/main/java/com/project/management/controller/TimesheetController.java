@@ -3,6 +3,7 @@ package com.project.management.controller;
 import com.project.management.dto.*;
 import com.project.management.service.TimesheetService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -12,15 +13,13 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/timesheets")
 @Slf4j
 public class TimesheetController {
     private final TimesheetService timesheetService;
 
-    public TimesheetController(TimesheetService timesheetService) {
-        this.timesheetService = timesheetService;
-    }
 
     @PostMapping
     @PreAuthorize("hasAuthority(@roleProperties.userRole)")
