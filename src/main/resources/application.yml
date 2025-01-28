@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: TimeSheetManagement
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/TimeSheetManagement_Application
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+jwt:
+  expiration-in-ms: 86400000
+
+logging:
+  level:
+    org.springframework: INFO
+    com.project.TimeSheetManagement: DEBUG
+
+roles:
+  adminRole: ROLE_ADMIN
+  userRole: ROLE_USER
