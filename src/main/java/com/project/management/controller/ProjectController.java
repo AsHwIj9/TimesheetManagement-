@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 
 @RequiredArgsConstructor
@@ -31,10 +32,19 @@ public class ProjectController {
     @GetMapping
     @PreAuthorize("hasAnyAuthority(@roleProperties.adminRole, @roleProperties.userRole)")
     public ResponseEntity<List<ProjectDTO>> getAllProjects() {
-        log.info("Fetching all projects...");
-        List<ProjectDTO> projects = projectService.getAllProjects();
-        log.info("Fetched {} projects", projects.size());
-        return ResponseEntity.ok(projects);
+        try {
+            log.info("Fetching all projects...");
+            List<ProjectDTO> projects = projectService.getAllProjects();
+            if (projects.isEmpty()) {
+                log.info("No projects found");
+                return ResponseEntity.ok(Collections.emptyList());
+            }
+            log.info("Fetched {} projects", projects.size());
+            return ResponseEntity.ok(projects);
+        } catch (Exception e) {
+            log.error("Error fetching projects", e);
+            throw new RuntimeException("Error fetching projects", e);
+        }
     }
 
     @PostMapping("/{projectId}/users")
