@@ -1,6 +1,7 @@
 package com.project.management.controller;
 
 import com.project.management.dto.*;
+import com.project.management.exception.ResourceNotFoundException;
 import com.project.management.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +44,7 @@ public class ProjectController {
             return ResponseEntity.ok(projects);
         } catch (Exception e) {
             log.error("Error fetching projects", e);
-            throw new RuntimeException("Error fetching projects", e);
+            throw new ResourceNotFoundException("Error fetching projects");
         }
     }
 
