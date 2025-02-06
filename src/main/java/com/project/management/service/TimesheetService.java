@@ -50,6 +50,36 @@ public class TimesheetService {
         return mapToDTO(savedTimesheet);
     }
 
+
+    public TimesheetDTO approveTimesheet(String timesheetId) {
+        Timesheet timesheet = timesheetRepository.findById(timesheetId)
+                .orElseThrow(() -> new IllegalArgumentException("Timesheet not found"));
+
+        // Only submitted timesheets can be approved
+        if (timesheet.getStatus() != TimeSheetStatus.SUBMITTED) {
+            throw new IllegalStateException("Only submitted timesheets can be approved");
+        }
+
+        timesheet.setStatus(TimeSheetStatus.APPROVED);
+        Timesheet savedTimesheet = timesheetRepository.save(timesheet);
+        return mapToDTO(savedTimesheet);
+    }
+
+    public TimesheetDTO rejectTimesheet(String timesheetId, String rejectionReason) {
+        Timesheet timesheet = timesheetRepository.findById(timesheetId)
+                .orElseThrow(() -> new IllegalArgumentException("Timesheet not found"));
+
+        // Only submitted timesheets can be rejected
+        if (timesheet.getStatus() != TimeSheetStatus.SUBMITTED) {
+            throw new IllegalStateException("Only submitted timesheets can be rejected");
+        }
+
+        timesheet.setStatus(TimeSheetStatus.REJECTED);
+        timesheet.setDescription(timesheet.getDescription() + "\nRejection reason: " + rejectionReason);
+        Timesheet savedTimesheet = timesheetRepository.save(timesheet);
+        return mapToDTO(savedTimesheet);
+    }
+
     public List<TimesheetSummaryDTO> getUserTimesheets(String userId, LocalDate startDate, LocalDate endDate) {
         List<Timesheet> timesheets = timesheetRepository
                 .findByUserIdAndWeekStartDateBetween(userId, startDate, endDate);

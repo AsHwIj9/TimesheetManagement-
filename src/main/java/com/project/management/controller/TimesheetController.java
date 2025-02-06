@@ -3,6 +3,7 @@ package com.project.management.controller;
 import com.project.management.dto.*;
 import com.project.management.service.TimesheetService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -30,6 +31,25 @@ public class TimesheetController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Timesheet submitted successfully", submitted));
     }
 
+    @PatchMapping("/{timesheetId}/approve")
+    @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
+    public ResponseEntity<ApiResponse<TimesheetDTO>> approveTimesheet(@PathVariable String timesheetId) {
+        log.info("Approving timesheet with ID: {}", timesheetId);
+        TimesheetDTO approved = timesheetService.approveTimesheet(timesheetId);
+        log.info("Timesheet approved successfully: {}", approved);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Timesheet approved successfully", approved));
+    }
+
+    @PatchMapping("/{timesheetId}/reject")
+    @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
+    public ResponseEntity<ApiResponse<TimesheetDTO>> rejectTimesheet(
+            @PathVariable String timesheetId,
+            @RequestParam @NotBlank String rejectionReason) {
+        log.info("Rejecting timesheet with ID: {} for reason: {}", timesheetId, rejectionReason);
+        TimesheetDTO rejected = timesheetService.rejectTimesheet(timesheetId, rejectionReason);
+        log.info("Timesheet rejected successfully: {}", rejected);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Timesheet rejected successfully", rejected));
+    }
     @GetMapping("/users/{userId}")
     @PreAuthorize("hasAuthority(@roleProperties.userRole)")
     public ResponseEntity<List<TimesheetSummaryDTO>> getUserTimesheets(
