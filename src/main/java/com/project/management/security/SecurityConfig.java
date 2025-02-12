@@ -34,7 +34,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(_ -> {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
-                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                    config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS" , "PATCH"));
                     config.setAllowedHeaders(Collections.singletonList("*"));
                     config.setAllowCredentials(true);
                     return config;
@@ -53,9 +53,10 @@ public class SecurityConfig {
                                 "/api/timesheets/projects/{projectID}",
                                 "/api/timesheets/users/{userID}",
                                 "/api/timesheets/stats/summary",
+                                "/api/timesheets/{timesheetID}/approve",
+                                "/api/timesheets/{timesheetID}/reject",
                                 "/api/metrics/",
                                 "/api/metrics/dashboard"
-
                         ).permitAll()
                         .anyRequest().authenticated()
                 );

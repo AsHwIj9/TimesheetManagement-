@@ -3,7 +3,7 @@ package com.project.management.service;
 import com.project.management.dto.*;
 import com.project.management.exception.ResourceNotFoundException;
 import com.project.management.mapper.ProjectMapper;
-import com.project.management.mapper.TimesheetMapper;
+
 import com.project.management.Models.Project;
 import com.project.management.Models.ProjectStatus;
 import com.project.management.Models.Timesheet;
@@ -28,13 +28,13 @@ public class ProjectService {
     private final UserRepository userRepository;
     private final TimesheetRepository timesheetRepository;
     private final ProjectMapper projectMapper;
-    private final TimesheetMapper timesheetMapper;
+
 
     public ProjectDTO createProject(ProjectDTO projectDTO) {
         Project project = new Project();
         project.setName(projectDTO.getName());
         project.setDescription(projectDTO.getDescription());
-        project.setStartDate(projectDTO.getStartDate());
+        project.setStartDate( projectDTO.getStartDate());
         project.setEndDate(projectDTO.getEndDate());
         project.setStatus(ProjectStatus.ACTIVE);
         project.setAssignedUsers(new ArrayList<>());
@@ -100,14 +100,24 @@ public class ProjectService {
         );
     }
 
-    private List<TimesheetSummaryDTO> getRecentTimesheets(String projectId) {
-        LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
-        List<Timesheet> timesheets = timesheetRepository.findByProjectIdAndWeekStartDateAfter(projectId, oneMonthAgo);
+    private TimesheetSummaryDTO mapToTimesheetSummaryDTO(Timesheet timesheet) {
+        if (timesheet == null) {
+            return null;
+        }
 
-        // Use timesheetMapper for proper DTO mapping
-        return timesheets.stream()
-                .map(timesheetMapper::toTimesheetSummaryDTO)
-                .collect(Collectors.toList());
+        TimesheetSummaryDTO dto = new TimesheetSummaryDTO();
+        dto.setId(timesheet.getId());
+        dto.setProjectName(timesheet.getProjectId()); // Change if you need project name
+        dto.setWeekStartDate(timesheet.getWeekStartDate());
+
+        // If dailyHours is a Map<DayOfWeek, Integer>
+        dto.setTotalHours(timesheet.getDailyHours() != null ?
+                timesheet.getDailyHours().values().stream().mapToInt(Integer::intValue).sum() : 0);
+
+        dto.setStatus(timesheet.getStatus());
+        dto.setSubmittedAt(timesheet.getSubmittedAt());
+
+        return dto;
     }
 
     private ProjectStatsDTO calculateProjectStats(Project project) {
@@ -131,6 +141,17 @@ public class ProjectService {
         );
     }
 
+    private List<TimesheetSummaryDTO> getRecentTimesheets(String projectId) {
+        List<Timesheet> recentTimesheets = timesheetRepository.findByProjectId(projectId)
+                .stream()
+                .sorted(Comparator.comparing(Timesheet::getSubmittedAt).reversed()) // Sort by most recent
+                .limit(5) // Get the last 5 timesheets
+                .collect(Collectors.toList());
+
+        return recentTimesheets.stream()
+                .map(this::mapToTimesheetSummaryDTO)
+                .collect(Collectors.toList());
+    }
 
     private UserDTO mapToUserDTO(User user) {
         return new UserDTO(

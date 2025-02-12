@@ -51,7 +51,6 @@ public class TimesheetController {
         return ResponseEntity.ok(new ApiResponse<>(true, "Timesheet rejected successfully", rejected));
     }
     @GetMapping("/users/{userId}")
-    @PreAuthorize("hasAuthority(@roleProperties.userRole)")
     public ResponseEntity<List<TimesheetSummaryDTO>> getUserTimesheets(
             @PathVariable String userId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
