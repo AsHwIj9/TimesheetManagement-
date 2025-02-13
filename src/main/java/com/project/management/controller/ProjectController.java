@@ -1,5 +1,6 @@
 package com.project.management.controller;
 
+import com.project.management.Models.ProjectStatus;
 import com.project.management.dto.*;
 import com.project.management.exception.ResourceNotFoundException;
 import com.project.management.service.ProjectService;
@@ -75,5 +76,16 @@ public class ProjectController {
         ProjectDetailDTO details = projectService.getProjectDetails(projectId);
         log.info("Fetched details for project with ID: {}", projectId);
         return ResponseEntity.ok(details);
+    }
+
+    @PatchMapping("/{projectId}/status")
+    @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
+    public ResponseEntity<ApiResponse<ProjectDTO>> updateProjectStatus(
+            @PathVariable String projectId,
+            @RequestParam ProjectStatus status) {
+        log.info("Updating project {} to status {}", projectId, status);
+        ProjectDTO updatedProject = projectService.updateProjectStatus(projectId, status);
+        log.info("Project {} updated successfully to status {}", projectId, status);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Project status updated successfully", updatedProject));
     }
 }

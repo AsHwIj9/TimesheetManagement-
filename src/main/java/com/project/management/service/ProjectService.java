@@ -61,6 +61,20 @@ public class ProjectService {
         userRepository.saveAll(users);
     }
 
+    public ProjectDTO updateProjectStatus(String projectId, ProjectStatus newStatus) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+
+
+        if (newStatus == ProjectStatus.COMPLETED || newStatus == ProjectStatus.CANCELLED) {
+            project.setStatus(newStatus);
+            Project updatedProject = projectRepository.save(project);
+            return projectMapper.toProjectDTO(updatedProject);
+        } else {
+            throw new IllegalArgumentException("Invalid status transition");
+        }
+    }
+
     public List<ProjectDTO> getAllProjects() {
         return projectRepository.findAll().stream()
                 .map(projectMapper::toProjectDTO)
@@ -127,8 +141,8 @@ public class ProjectService {
                 .map(Timesheet::getUserId)
                 .collect(Collectors.toSet());
 
-        Double progress = project.getTotalBudgetHours() > 0
-                ? (double) project.getTotalBilledHours() / project.getTotalBudgetHours() * 100
+        Double progress = (project.getTotalBudgetHours() != null && project.getTotalBudgetHours() > 0)
+                ? ((project.getTotalBilledHours() != null ? project.getTotalBilledHours() : 0) / (double) project.getTotalBudgetHours()) * 100
                 : 0.0;
 
         return new ProjectStatsDTO(
