@@ -1,9 +1,6 @@
 package com.project.management.controller;
 
-import com.project.management.dto.ApiResponse;
-import com.project.management.dto.UserDTO;
-import com.project.management.dto.UserRegistrationDTO;
-import com.project.management.dto.UserWeeklyStatsDTO;
+import com.project.management.dto.*;
 import com.project.management.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +49,7 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
+
     @GetMapping("/stats/weekly")
     @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
     public ResponseEntity<List<UserWeeklyStatsDTO>> getUsersWeeklyStats(
@@ -61,5 +59,14 @@ public class UserController {
         List<UserWeeklyStatsDTO> stats = userService.getUsersWeeklyStats(startDate, endDate);
         log.info("Fetched weekly stats for {} users", stats.size());
         return ResponseEntity.ok(stats);
+    }
+
+    @DeleteMapping("/{userId}")
+    @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
+    public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable String userId) {
+        log.info("Deleting user with ID: {}", userId);
+        userService.deleteUserById(userId);
+        log.info("User with ID {} deleted successfully", userId);
+        return ResponseEntity.ok(new ApiResponse<>(true, "User deleted successfully", userId));
     }
 }

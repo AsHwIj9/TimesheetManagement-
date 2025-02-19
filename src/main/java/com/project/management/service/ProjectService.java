@@ -121,10 +121,10 @@ public class ProjectService {
 
         TimesheetSummaryDTO dto = new TimesheetSummaryDTO();
         dto.setId(timesheet.getId());
-        dto.setProjectName(timesheet.getProjectId()); // Change if you need project name
+        dto.setProjectId(timesheet.getProjectId());
         dto.setWeekStartDate(timesheet.getWeekStartDate());
 
-        // If dailyHours is a Map<DayOfWeek, Integer>
+
         dto.setTotalHours(timesheet.getDailyHours() != null ?
                 timesheet.getDailyHours().values().stream().mapToInt(Integer::intValue).sum() : 0);
 

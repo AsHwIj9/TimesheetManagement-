@@ -1,12 +1,14 @@
 package com.project.management.service;
 
 import com.project.management.dto.TimesheetDTO;
+import com.project.management.dto.TimesheetResponseDTO;
 import com.project.management.dto.TimesheetStatsDTO;
 import com.project.management.dto.TimesheetSummaryDTO;
 import com.project.management.Models.Project;
 import com.project.management.Models.TimeSheetStatus;
 import com.project.management.Models.Timesheet;
 import com.project.management.Models.User;
+import com.project.management.exception.ResourceNotFoundException;
 import com.project.management.repository.ProjectRepository;
 import com.project.management.repository.TimesheetRepository;
 import com.project.management.repository.UserRepository;
@@ -50,12 +52,29 @@ public class TimesheetService {
         return mapToDTO(savedTimesheet);
     }
 
+    public TimesheetResponseDTO getTimesheetById(String timesheetId) {
+        Timesheet timesheet = timesheetRepository.findById(timesheetId)
+                .orElseThrow(() -> new ResourceNotFoundException("Timesheet not found with ID: " + timesheetId));
+
+
+        return new TimesheetResponseDTO(
+                timesheet.getId(),
+                timesheet.getUserId(),
+                timesheet.getProjectId(),
+                timesheet.getWeekStartDate(),
+                timesheet.getDailyHours(),
+                timesheet.getDescription(),
+                timesheet.getStatus(),
+                timesheet.getSubmittedAt()
+        );
+    }
+
 
     public TimesheetDTO approveTimesheet(String timesheetId) {
         Timesheet timesheet = timesheetRepository.findById(timesheetId)
                 .orElseThrow(() -> new IllegalArgumentException("Timesheet not found"));
 
-        // Only submitted timesheets can be approved
+
         if (timesheet.getStatus() != TimeSheetStatus.SUBMITTED) {
             throw new IllegalStateException("Only submitted timesheets can be approved");
         }
@@ -69,7 +88,7 @@ public class TimesheetService {
         Timesheet timesheet = timesheetRepository.findById(timesheetId)
                 .orElseThrow(() -> new IllegalArgumentException("Timesheet not found"));
 
-        // Only submitted timesheets can be rejected
+
         if (timesheet.getStatus() != TimeSheetStatus.SUBMITTED) {
             throw new IllegalStateException("Only submitted timesheets can be rejected");
         }
@@ -123,20 +142,19 @@ public class TimesheetService {
     }
 
     private void validateTimesheetSubmission(TimesheetDTO timesheetDTO) {
-        // Check if project exists
+
         Optional<Project> projectOptional = projectRepository.findById(timesheetDTO.getProjectId());
-        Project project = projectOptional.orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        Project project = projectOptional.orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        // Check if user exists
         Optional<User> userOptional = userRepository.findById(timesheetDTO.getUserId());
-        User user = userOptional.orElseThrow(() -> new IllegalArgumentException("User not found"));
+        User user = userOptional.orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Check if user is assigned to the project
+
         if (!project.getAssignedUsers().contains(user.getId())) {
             throw new IllegalArgumentException("User is not assigned to this project");
         }
 
-        // Check if the timesheet for the week already exists
+
         if (timesheetRepository.existsByUserIdAndProjectIdAndWeekStartDate(
                 timesheetDTO.getUserId(),
                 timesheetDTO.getProjectId(),
@@ -161,7 +179,7 @@ public class TimesheetService {
     private TimesheetSummaryDTO mapToSummaryDTO(Timesheet timesheet) {
         return new TimesheetSummaryDTO(
                 timesheet.getId(),
-                "TimeSheet Management System",
+                timesheet.getProjectId(),
                 timesheet.getWeekStartDate(),
                 calculateTotalHours(timesheet.getDailyHours()),
                 timesheet.getStatus(),
@@ -185,11 +203,10 @@ public class TimesheetService {
         Optional<Project> projectOptional = projectRepository.findById(timesheetDTO.getProjectId());
         Project project = projectOptional.orElseThrow(() -> new IllegalArgumentException("Project not found"));
 
-        // Calculate the total hours from the daily hours map in the timesheet
+
         Integer additionalHours = calculateTotalHours(timesheetDTO.getDailyHours());
-        // Update the total billed hours for the project
         project.setTotalBilledHours(project.getTotalBilledHours() + additionalHours);
-        // Save the updated project
+
         projectRepository.save(project);
     }
 }

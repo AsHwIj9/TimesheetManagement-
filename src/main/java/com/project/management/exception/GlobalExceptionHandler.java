@@ -35,5 +35,6 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An unexpected error occurred.");
 
+
     }
 }

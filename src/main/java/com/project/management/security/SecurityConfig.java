@@ -50,6 +50,7 @@ public class SecurityConfig {
                                 "/api/projects/{projectID}/users",
                                 "/api/projects/stats",
                                 "/api/timesheets",
+                                "/api/timesheets/{timesheetID}",
                                 "/api/timesheets/projects/{projectID}",
                                 "/api/timesheets/users/{userID}",
                                 "/api/timesheets/stats/summary",

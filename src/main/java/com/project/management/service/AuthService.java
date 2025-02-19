@@ -4,9 +4,11 @@ import com.project.management.dto.LoginRequestDTO;
 import com.project.management.dto.LoginResponseDTO;
 import com.project.management.dto.RegisterRequestDTO;
 import com.project.management.Models.User;
+import com.project.management.exception.UserAlreadyExistsException;
 import com.project.management.repository.UserRepository;
 import com.project.management.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import javax.security.sasl.AuthenticationException;
 @Service
 @RequiredArgsConstructor
 @Transactional
+@Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -36,12 +39,14 @@ public class AuthService {
 
     public void register(RegisterRequestDTO registerRequest) {
         // Check if username or email is already taken
+        log.info("exception raised for user not exist");
         if (userRepository.existsByUsername(registerRequest.getUsername())) {
-            throw new IllegalArgumentException("Username is already taken");
-        }
+            throw new UserAlreadyExistsException("Username is already taken");
 
+        }
+        log.info("exception raised for email not exist");
         if (userRepository.existsByEmail(registerRequest.getEmail())) {
-            throw new IllegalArgumentException("Email is already taken");
+            throw new UserAlreadyExistsException("Email is already taken");
         }
 
         // Create a new user and set their details

@@ -3,16 +3,17 @@ package com.project.management.controller;
 import com.project.management.dto.*;
 import com.project.management.service.TimesheetService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RequiredArgsConstructor
 @RestController
@@ -26,9 +27,21 @@ public class TimesheetController {
     @PreAuthorize("hasAuthority(@roleProperties.userRole)")
     public ResponseEntity<ApiResponse<TimesheetDTO>> submitTimesheet(@Valid @RequestBody TimesheetDTO timesheetDTO) {
         log.info("Submitting timesheet: {}", timesheetDTO);
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        timesheetDTO.setUserId(userId);
+        log.info("Submitting timesheet: {}", timesheetDTO);
         TimesheetDTO submitted = timesheetService.submitTimesheet(timesheetDTO);
         log.info("Timesheet submitted successfully: {}", submitted);
         return ResponseEntity.ok(new ApiResponse<>(true, "Timesheet submitted successfully", submitted));
+    }
+
+    @GetMapping("/{timesheetId}")
+    @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
+    public ResponseEntity<ApiResponse<TimesheetResponseDTO>> getTimesheetById(@PathVariable String timesheetId) {
+        log.info("Fetching timesheet with ID: {}", timesheetId);
+        TimesheetResponseDTO timesheet = timesheetService.getTimesheetById(timesheetId);
+        log.info("Fetched timesheet: {}", timesheet);
+        return ResponseEntity.ok(new ApiResponse<>(true, "Timesheet retrieved successfully", timesheet));
     }
 
     @PatchMapping("/{timesheetId}/approve")
@@ -44,12 +57,14 @@ public class TimesheetController {
     @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
     public ResponseEntity<ApiResponse<TimesheetDTO>> rejectTimesheet(
             @PathVariable String timesheetId,
-            @RequestParam @NotBlank String rejectionReason) {
+            @RequestBody Map<String, String> requestBody) {
+        String rejectionReason = requestBody.get("rejectionReason");
         log.info("Rejecting timesheet with ID: {} for reason: {}", timesheetId, rejectionReason);
         TimesheetDTO rejected = timesheetService.rejectTimesheet(timesheetId, rejectionReason);
         log.info("Timesheet rejected successfully: {}", rejected);
         return ResponseEntity.ok(new ApiResponse<>(true, "Timesheet rejected successfully", rejected));
     }
+
     @GetMapping("/users/{userId}")
     public ResponseEntity<List<TimesheetSummaryDTO>> getUserTimesheets(
             @PathVariable String userId,

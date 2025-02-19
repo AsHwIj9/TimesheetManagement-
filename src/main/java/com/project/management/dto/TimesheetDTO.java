@@ -6,6 +6,7 @@ import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
 
 
 import java.time.DayOfWeek;
@@ -17,6 +18,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TimesheetDTO {
+    @Id
     private String id;
 
     @NotBlank(message = "User ID is required")

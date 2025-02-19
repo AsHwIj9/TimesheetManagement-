@@ -6,6 +6,8 @@ import com.project.management.dto.UserWeeklyStatsDTO;
 import com.project.management.Models.Timesheet;
 import com.project.management.Models.User;
 import com.project.management.Models.UserRole;
+import com.project.management.exception.ResourceNotFoundException;
+import com.project.management.exception.UserAlreadyExistsException;
 import com.project.management.repository.TimesheetRepository;
 import com.project.management.repository.UserRepository;
 import jakarta.validation.ValidationException;
@@ -36,7 +38,7 @@ public class UserService {
 
     public UserDTO createUser(UserRegistrationDTO registrationDTO) {
         if (userRepository.findByUsername(registrationDTO.getUsername()).isPresent()) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new UserAlreadyExistsException("Username already exists");
         }
 
         if (!registrationDTO.getPassword().equals(registrationDTO.getConfirmPassword())) {
@@ -64,6 +66,13 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
         return mapToDTO(user);
+    }
+
+    public void deleteUserById(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        userRepository.delete(user);
     }
 
     public List<UserWeeklyStatsDTO> getUsersWeeklyStats(LocalDate startDate, LocalDate endDate) {
