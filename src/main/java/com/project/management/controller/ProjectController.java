@@ -33,20 +33,15 @@ public class ProjectController {
 
     @GetMapping
     @PreAuthorize("hasAnyAuthority(@roleProperties.adminRole, @roleProperties.userRole)")
-    public ResponseEntity<List<ProjectDTO>> getAllProjects() {
-        try {
-            log.info("Fetching all projects...");
-            List<ProjectDTO> projects = projectService.getAllProjects();
-            if (projects.isEmpty()) {
-                log.info("No projects found");
-                return ResponseEntity.ok(Collections.emptyList());
-            }
-            log.info("Fetched {} projects", projects.size());
-            return ResponseEntity.ok(projects);
-        } catch (Exception e) {
-            log.error("Error fetching projects", e);
-            throw new ResourceNotFoundException("Error fetching projects");
+    public ResponseEntity<List<ProjectDTO>> getAllProjects() throws Exception {
+        log.info("Fetching all projects...");
+        List<ProjectDTO> projects = projectService.getAllProjects();
+        if (projects.isEmpty()) {
+            log.info("No projects found");
+            return ResponseEntity.ok(Collections.emptyList());
         }
+        log.info("Fetched {} projects", projects.size());
+        return ResponseEntity.ok(projects);
     }
 
     @PostMapping("/{projectId}/users")

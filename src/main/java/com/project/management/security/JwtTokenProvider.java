@@ -33,7 +33,7 @@ public class JwtTokenProvider {
                 .compact();
     }
 
-    // Validate the JWT Token
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -42,12 +42,12 @@ public class JwtTokenProvider {
                     .parseClaimsJws(token);
             return true;
         } catch (JwtException | IllegalArgumentException e) {
-            // Log or handle invalid token cases if needed
+
             return false;
         }
     }
 
-    // Extract User ID from JWT Token
+
     public String getUserIdFromToken(String token) {
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(secretKey) // Use the injected secret key

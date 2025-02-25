@@ -1,10 +1,8 @@
 package com.project.management.controller;
 
-import com.project.management.dto.ApiResponse;
+
 import com.project.management.dto.DashboardMetricsDTO;
-import com.project.management.dto.MetricsPublishDTO;
 import com.project.management.service.MetricsService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -27,14 +25,4 @@ public class MetricsController {
         log.info("Dashboard metrics fetched successfully: {}", metrics);
         return ResponseEntity.ok(metrics);
     }
-
-    @PostMapping("/publish")
-    @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
-    public ResponseEntity<ApiResponse<Void>> publishMetrics(@Valid @RequestBody MetricsPublishDTO metricsDTO) {
-        log.info("Publishing metrics: {}", metricsDTO);
-        metricsService.publishMetrics(metricsDTO);
-        log.info("Metrics published successfully.");
-        return ResponseEntity.ok(new ApiResponse<>(true, "Metrics published successfully"));
-    }
-
 }

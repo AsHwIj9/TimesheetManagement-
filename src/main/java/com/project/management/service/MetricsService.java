@@ -1,7 +1,6 @@
 package com.project.management.service;
 
 import com.project.management.dto.DashboardMetricsDTO;
-import com.project.management.dto.MetricsPublishDTO;
 import com.project.management.dto.ProjectStatsDTO;
 import com.project.management.dto.UserWeeklyStatsDTO;
 import lombok.RequiredArgsConstructor;
@@ -38,16 +37,6 @@ public class MetricsService {
         );
     }
 
-
-
-    public void publishMetrics(MetricsPublishDTO metricsDTO) {
-        // for publishing metrics to external systems or generating reports
-        //  includes:
-        //  Generating PDF reports
-        //  Sending email notifications
-        //  Storing metrics history
-        //  Updating external dashboards
-    }
     private Double calculateAverageUtilization(List<UserWeeklyStatsDTO> userStats) {
         return userStats.stream()
                 .mapToDouble(UserWeeklyStatsDTO::getUtilizationPercentage)
