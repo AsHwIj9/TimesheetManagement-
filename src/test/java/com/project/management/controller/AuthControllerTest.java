@@ -100,7 +100,7 @@ class AuthControllerTest {
         invalidRequest.setUsername("invalidUser");
         invalidRequest.setPassword("wrongPassword");
 
-        // Mock service to throw an exception for invalid credentials
+
         when(authService.login(any(LoginRequestDTO.class)))
                 .thenThrow(new RuntimeException("Invalid credentials"));
 

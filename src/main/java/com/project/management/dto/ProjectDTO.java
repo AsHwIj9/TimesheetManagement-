@@ -29,6 +29,7 @@ public class ProjectDTO {
     private LocalDateTime endDate;
 
     private ProjectStatus status;
+
     private List<String> assignedUsers;
 
    @Min(value = 0, message = "Total budget hours must be positive")

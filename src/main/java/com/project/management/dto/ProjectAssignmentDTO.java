@@ -14,10 +14,10 @@ import java.util.List;
 public class ProjectAssignmentDTO {
 
     @NotBlank(message = "Project ID is required")
-    private String projectId;
+    private String projectName;
 
     @NotEmpty(message = "At least one user must be assigned")
-    private List<String> userIds;
+    private List<String> userNames;
 
 }
 

@@ -20,6 +20,5 @@ public interface ProjectMapper {
     @Mapping(target = "totalBilledHours", source = "totalBilledHours")
     ProjectDTO toProjectDTO(Project project);
 
-    @InheritInverseConfiguration
-    Project toProject(ProjectDTO projectDTO);
+
 }

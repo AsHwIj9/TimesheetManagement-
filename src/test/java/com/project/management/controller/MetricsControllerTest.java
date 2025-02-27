@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.http.MediaType;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@WithMockUser
 class MetricsControllerTest {
 
     @Autowired
@@ -52,17 +54,17 @@ class MetricsControllerTest {
                 .andExpect(jsonPath("$.averageUtilization").value(75.0));
     }
     @Test
-    @WithMockUser(authorities = "USER")
+    @WithMockUser(authorities = "ROLE_USER")
     void testGetDashboardMetrics_AsUser_Forbidden() throws Exception {
         mockMvc.perform(get("/api/metrics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());  // Expect 403, NOT 500
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void testGetDashboardMetrics_Unauthenticated_Unauthorized() throws Exception {
         mockMvc.perform(get("/api/metrics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());  // Expect 401, NOT 500
+                .andExpect(status().isUnauthorized());
     }
 }

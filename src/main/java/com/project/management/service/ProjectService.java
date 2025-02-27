@@ -2,6 +2,7 @@ package com.project.management.service;
 
 import com.project.management.dto.*;
 import com.project.management.exception.ResourceNotFoundException;
+import com.project.management.exception.UserAlreadyExistsException;
 import com.project.management.mapper.ProjectMapper;
 
 import com.project.management.Models.Project;
@@ -37,7 +38,7 @@ public class ProjectService {
         project.setStartDate( projectDTO.getStartDate());
         project.setEndDate(projectDTO.getEndDate());
         project.setStatus(ProjectStatus.ACTIVE);
-        project.setAssignedUsers(new ArrayList<>());
+        project.setAssignedUsers(projectDTO.getAssignedUsers());
         project.setTotalBudgetHours(projectDTO.getTotalBudgetHours());
         project.setTotalBilledHours(0);
 
@@ -54,11 +55,30 @@ public class ProjectService {
             throw new ResourceNotFoundException("One or more users not found");
         }
 
-        project.getAssignedUsers().addAll(userIds);
-        users.forEach(user -> user.getAssignedProjects().add(projectId));
+
+        Set<String> existingUserIds = new HashSet<>(project.getAssignedUsers());
+
+
+        List<User> newUsers = users.stream()
+                .filter(user -> !existingUserIds.contains(user.getId()))
+                .toList();
+
+        if (newUsers.isEmpty()) {
+            throw new UserAlreadyExistsException("All users are already assigned to this project.");
+        }
+
+
+        List<String> newUserIds = newUsers.stream()
+                .map(User::getId)
+                .toList();
+
+        project.getAssignedUsers().addAll(newUserIds);
+
+
+        newUsers.forEach(user -> user.getAssignedProjects().add(project.getId()));
 
         projectRepository.save(project);
-        userRepository.saveAll(users);
+        userRepository.saveAll(newUsers);
     }
 
     public ProjectDTO updateProjectStatus(String projectId, ProjectStatus newStatus) {
@@ -87,30 +107,41 @@ public class ProjectService {
                 .collect(Collectors.toList());
     }
 
-    public ProjectDetailDTO getProjectDetails(String projectId) {
-        Project project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+public ProjectDetailDTO getProjectDetails(String projectId) {
+    Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        // Map assigned users without exposing password
-        List<UserDTO> assignedUsers = userRepository.findAllById(project.getAssignedUsers())
-                .stream()
-                .map(this::mapToUserDTO)
-                .collect(Collectors.toList());
 
-        // Get recent timesheets
-        List<TimesheetSummaryDTO> recentTimesheets = getRecentTimesheets(projectId);
+    List<UserDTO> assignedUsers = userRepository.findAllById(project.getAssignedUsers())
+            .stream()
+            .map(this::mapToUserDTO)
+            .collect(Collectors.toList());
 
-        return new ProjectDetailDTO(
-                project.getId(),
-                project.getName(),
-                project.getDescription(),
-                project.getStatus(),
-                project.getStartDate(),
-                project.getEndDate(),
-                assignedUsers,
-                project.getTotalBudgetHours(),
-                project.getTotalBilledHours(),
-                recentTimesheets
+    List<TimesheetSummaryDTO> recentTimesheets = getRecentTimesheets(projectId);
+
+    return new ProjectDetailDTO(
+            project.getId(),
+            project.getName(),
+            project.getDescription(),
+            project.getStatus(),
+            project.getStartDate(),
+            project.getEndDate(),
+            assignedUsers,
+            project.getTotalBudgetHours(),
+            project.getTotalBilledHours(),
+            recentTimesheets
+    );
+}
+
+    private UserDTO mapToUserDTO(User user) {
+        return new UserDTO(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                null,
+                user.getRole(),
+                user.getAssignedProjects(),
+                user.getCreatedAt()
         );
     }
 
@@ -165,17 +196,5 @@ public class ProjectService {
         return recentTimesheets.stream()
                 .map(this::mapToTimesheetSummaryDTO)
                 .collect(Collectors.toList());
-    }
-
-    private UserDTO mapToUserDTO(User user) {
-        return new UserDTO(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                null,
-                user.getRole(),
-                user.getAssignedProjects(),
-                user.getCreatedAt()
-        );
     }
 }

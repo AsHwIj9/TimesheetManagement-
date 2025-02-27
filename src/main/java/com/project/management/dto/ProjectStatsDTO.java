@@ -23,6 +23,7 @@ public class ProjectStatsDTO {
 
     private Integer totalBilledHours;
 
+
     private Double projectProgress;
 
     private List<String> activeResources;

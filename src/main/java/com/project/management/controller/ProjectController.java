@@ -1,8 +1,12 @@
 package com.project.management.controller;
 
+import com.project.management.Models.Project;
 import com.project.management.Models.ProjectStatus;
+import com.project.management.Models.User;
 import com.project.management.dto.*;
 import com.project.management.exception.ResourceNotFoundException;
+import com.project.management.repository.ProjectRepository;
+import com.project.management.repository.UserRepository;
 import com.project.management.service.ProjectService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +24,8 @@ import java.util.List;
 @Slf4j
 public class ProjectController {
     private final ProjectService projectService;
+    private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
 
 
     @PostMapping
@@ -44,14 +50,30 @@ public class ProjectController {
         return ResponseEntity.ok(projects);
     }
 
-    @PostMapping("/{projectId}/users")
+
+
+    @PostMapping("/{projectName}/users")
     @PreAuthorize("hasAuthority(@roleProperties.adminRole)")
     public ResponseEntity<ApiResponse<Void>> assignUsersToProject(
-            @PathVariable String projectId,
+            @PathVariable String projectName,
             @Valid @RequestBody ProjectAssignmentDTO assignmentDTO) {
-        log.info("Assigning users to project with ID: {}. User IDs: {}", projectId, assignmentDTO.getUserIds());
-        projectService.assignUsersToProject(projectId, assignmentDTO.getUserIds());
-        log.info("Users assigned successfully to project with ID: {}", projectId);
+
+        log.info("Fetching project ID for project name: {}", assignmentDTO.getProjectName());
+        Project project = projectRepository.findByName(assignmentDTO.getProjectName())
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found: " + assignmentDTO.getProjectName()));
+
+        log.info("Fetching user IDs for usernames: {}", assignmentDTO.getUserNames());
+        List<User> users = userRepository.findAllUserIdByUsername(assignmentDTO.getUserNames());
+        if (users.size() != assignmentDTO.getUserNames().size()) {
+            throw new ResourceNotFoundException("One or more users not found");
+        }
+
+        List<String> userIds = users.stream().map(User::getId).toList();
+        log.info("Assigning users to project with ID: {}. User IDs: {}", project.getId(), userIds);
+
+        projectService.assignUsersToProject(project.getId(), userIds);
+        log.info("Users assigned successfully to project with ID: {}", project.getId());
+
         return ResponseEntity.ok(new ApiResponse<>(true, "Users assigned successfully"));
     }
 

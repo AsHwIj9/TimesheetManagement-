@@ -79,8 +79,8 @@ class ProjectControllerTest {
     @WithMockUser(username = "admin", roles = "ADMIN")
     void assignUsersToProject_Success() throws Exception {
         ProjectAssignmentDTO assignmentDTO = new ProjectAssignmentDTO();
-        assignmentDTO.setProjectId(testProjectId);
-        assignmentDTO.setUserIds(List.of("user1", "user2"));
+        assignmentDTO.setProjectName(projectDTO.getName());
+        assignmentDTO.setUserNames(List.of("user1", "user2"));
 
         mockMvc.perform(post("/api/projects/{projectId}/users", testProjectId)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -89,7 +89,19 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Users assigned successfully"));
 
-        verify(projectService).assignUsersToProject(testProjectId, assignmentDTO.getUserIds());
+        verify(projectService).assignUsersToProject(testProjectId, assignmentDTO.getUserNames());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void assignUsersToProject_ValidationFailure() throws Exception {
+        ProjectAssignmentDTO invalidAssignment = new ProjectAssignmentDTO();
+        // Leave required fields empty to trigger validation
+
+        mockMvc.perform(post("/api/projects/{projectId}/users", testProjectId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(invalidAssignment)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -112,6 +124,16 @@ class ProjectControllerTest {
     }
 
     @Test
+    @WithMockUser(username = "user", roles = "USER")
+    void getProjectDetails_NotFound() throws Exception {
+        when(projectService.getProjectDetails("nonexistent"))
+                .thenThrow(new com.project.management.exception.ResourceNotFoundException("Project not found"));
+
+        mockMvc.perform(get("/api/projects/{projectId}", "nonexistent"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @WithMockUser(username = "admin", roles = "ADMIN")
     void updateProjectStatus_Success() throws Exception {
         projectDTO.setStatus(ProjectStatus.COMPLETED);
@@ -124,6 +146,14 @@ class ProjectControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Project status updated successfully"))
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void updateProjectStatus_InvalidStatus() throws Exception {
+        mockMvc.perform(patch("/api/projects/{projectId}/status", testProjectId)
+                        .param("status", "INVALID_STATUS"))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -151,5 +181,29 @@ class ProjectControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(projectDTO)))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "ADMIN")
+    void getProjectStats_Success() throws Exception {
+        ProjectStatsDTO statsDTO = new ProjectStatsDTO();
+        statsDTO.setProjectId(testProjectId);
+        statsDTO.setProjectName("Test Project");
+        statsDTO.setActiveResourceCount(5);
+        statsDTO.setTotalBilledHours(120);
+        statsDTO.setProjectProgress(75.0);
+        statsDTO.setActiveResources(List.of("user1", "user2", "user3"));
+
+        List<ProjectStatsDTO> statsList = List.of(statsDTO);
+        when(projectService.getProjectStats()).thenReturn(statsList);
+
+        mockMvc.perform(get("/api/projects/stats"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].projectId").value(testProjectId))
+                .andExpect(jsonPath("$[0].projectName").value("Test Project"))
+                .andExpect(jsonPath("$[0].activeResourceCount").value(5))
+                .andExpect(jsonPath("$[0].totalBilledHours").value(120))
+                .andExpect(jsonPath("$[0].projectProgress").value(75.0))
+                .andExpect(jsonPath("$[0].activeResources[0]").value("user1"));
     }
 }
