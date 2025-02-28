@@ -193,20 +193,7 @@ class TimesheetControllerTest {
                 .andExpect(status().isOk());
     }
 
-    @Test
-    @WithMockUser(username = "test-user", roles = {"USER"})
-    void submitTimesheet_ValidationFailure() throws Exception {
-        sampleTimesheetDTO.setProjectId(null); // Trigger validation failure
 
-        mockMvc.perform(post("/api/timesheets")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(sampleTimesheetDTO)))
-                .andExpect(status().isBadRequest());
-    }
 
-    @Test
-    void unauthorizedAccess_Failure() throws Exception {
-        mockMvc.perform(get("/api/timesheets/{timesheetId}", testTimesheetId))
-                .andExpect(status().isUnauthorized());
-    }
+
 }

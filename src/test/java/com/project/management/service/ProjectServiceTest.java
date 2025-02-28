@@ -4,182 +4,294 @@ import com.project.management.Models.Project;
 import com.project.management.Models.ProjectStatus;
 import com.project.management.Models.Timesheet;
 import com.project.management.Models.User;
+import com.project.management.Models.TimeSheetStatus;
 import com.project.management.dto.ProjectDTO;
 import com.project.management.dto.ProjectDetailDTO;
 import com.project.management.dto.ProjectStatsDTO;
+import com.project.management.dto.UserDTO;
+import com.project.management.dto.TimesheetSummaryDTO;
 import com.project.management.exception.ResourceNotFoundException;
+import com.project.management.exception.UserAlreadyExistsException;
 import com.project.management.mapper.ProjectMapper;
 import com.project.management.repository.ProjectRepository;
 import com.project.management.repository.TimesheetRepository;
 import com.project.management.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.EnumMap;
 
+import static com.project.management.Models.UserRole.USER;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest
 class ProjectServiceTest {
 
-    @Autowired
-    private ProjectService projectService;
-
-    @MockBean
+    @Mock
     private ProjectRepository projectRepository;
 
-    @MockBean
+    @Mock
     private UserRepository userRepository;
 
-    @MockBean
+    @Mock
     private TimesheetRepository timesheetRepository;
 
-    @MockBean
+    @Mock
     private ProjectMapper projectMapper;
+
+    @InjectMocks
+    private ProjectService projectService;
 
     private Project testProject;
     private ProjectDTO testProjectDTO;
     private User testUser;
+    private Timesheet testTimesheet;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
+        // Setup test project
         testProject = new Project();
-        testProject.setId("1");
+        testProject.setId("project123");
         testProject.setName("Test Project");
-        testProject.setDescription("Test Description");
+        testProject.setDescription("This is a test project");
         testProject.setStartDate(LocalDateTime.now());
-        testProject.setEndDate(LocalDateTime.now().plusMonths(1));
+        testProject.setEndDate(LocalDateTime.now().plusMonths(3));
         testProject.setStatus(ProjectStatus.ACTIVE);
-        testProject.setAssignedUsers(new ArrayList<>());
+        testProject.setAssignedUsers(new ArrayList<>(Arrays.asList("user1", "user2")));
         testProject.setTotalBudgetHours(100);
-        testProject.setTotalBilledHours(0);
+        testProject.setTotalBilledHours(20);
 
+        // Setup test project DTO
         testProjectDTO = new ProjectDTO();
+        testProjectDTO.setId("project123");
         testProjectDTO.setName("Test Project");
-        testProjectDTO.setDescription("Test Description");
+        testProjectDTO.setDescription("This is a test project");
         testProjectDTO.setStartDate(LocalDateTime.now());
-        testProjectDTO.setEndDate(LocalDateTime.now().plusMonths(1));
+        testProjectDTO.setEndDate(LocalDateTime.now().plusMonths(3));
+        testProjectDTO.setStatus(ProjectStatus.ACTIVE);
+        testProjectDTO.setAssignedUsers(new ArrayList<>(Arrays.asList("user1", "user2")));
         testProjectDTO.setTotalBudgetHours(100);
+        testProjectDTO.setTotalBilledHours(20);
 
+        // Setup test user
         testUser = new User();
-        testUser.setId("user1");
-        testUser.setUsername("testUser");
+        testUser.setId("user3");
+        testUser.setUsername("testuser");
+        testUser.setEmail("test@example.com");
+        testUser.setPassword("password");
+        testUser.setRole(USER); // Fixed: Using String instead of DEVELOPER enum
         testUser.setAssignedProjects(new ArrayList<>());
+        testUser.setCreatedAt(LocalDateTime.now());
+
+        // Setup test timesheet
+        testTimesheet = new Timesheet();
+        testTimesheet.setId("timesheet123");
+        testTimesheet.setUserId("user1");
+        testTimesheet.setProjectId("project123");
+        testTimesheet.setWeekStartDate(LocalDate.now().minusDays(7));
+
+        // Using EnumMap instead of HashMap
+        Map<DayOfWeek, Integer> dailyHours = new EnumMap<>(DayOfWeek.class);
+        dailyHours.put(DayOfWeek.MONDAY, 8);
+        dailyHours.put(DayOfWeek.TUESDAY, 7);
+        dailyHours.put(DayOfWeek.WEDNESDAY, 8);
+        dailyHours.put(DayOfWeek.THURSDAY, 6);
+        dailyHours.put(DayOfWeek.FRIDAY, 6);
+        testTimesheet.setDailyHours(dailyHours);
+        testTimesheet.setDescription("Weekly work");
+        testTimesheet.setStatus(TimeSheetStatus.APPROVED);
+        testTimesheet.setSubmittedAt(LocalDateTime.now().minusDays(2));
+
+        // Set up common mocks
+        when(projectMapper.toProjectDTO(any(Project.class))).thenReturn(testProjectDTO);
     }
 
     @Test
-    void createProject_ShouldCreateAndReturnProject() {
+    void testCreateProject() {
+        // Arrange
         when(projectRepository.save(any(Project.class))).thenReturn(testProject);
-        when(projectMapper.toProjectDTO(any(Project.class))).thenReturn(testProjectDTO);
 
+        // Act
         ProjectDTO result = projectService.createProject(testProjectDTO);
 
+        // Assert
         assertNotNull(result);
         assertEquals(testProjectDTO.getName(), result.getName());
-        verify(projectRepository).save(any(Project.class));
+        assertEquals(testProjectDTO.getDescription(), result.getDescription());
+        verify(projectRepository, times(1)).save(any(Project.class));
+        verify(projectMapper, times(1)).toProjectDTO(any(Project.class));
     }
 
     @Test
-    void assignUsersToProject_ShouldAssignUsersSuccessfully() {
-        List<String> userIds = List.of("user1");  // Using List.of instead of Arrays.asList
-        when(projectRepository.findById("1")).thenReturn(Optional.of(testProject));
-        when(userRepository.findAllById(userIds)).thenReturn(List.of(testUser));
+    void testAssignUsersToProject() {
+        // Arrange
+        List<String> newUserIds = Collections.singletonList("user3");
+        List<User> users = Collections.singletonList(testUser);
 
-        assertDoesNotThrow(() ->
-                projectService.assignUsersToProject("1", userIds)
-        );
+        when(projectRepository.findById(anyString())).thenReturn(Optional.of(testProject));
+        when(userRepository.findAllById(anyList())).thenReturn(users);
 
-        verify(projectRepository).save(any(Project.class));
-        verify(userRepository).saveAll(any());
+        // Act
+        projectService.assignUsersToProject("project123", newUserIds);
+
+        // Assert
+        assertTrue(testProject.getAssignedUsers().contains("user3"));
+        assertTrue(testUser.getAssignedProjects().contains("project123"));
+        verify(projectRepository, times(1)).save(testProject);
+        verify(userRepository, times(1)).saveAll(anyList());
     }
 
     @Test
-    void assignUsersToProject_ShouldThrowException_WhenProjectNotFound() {
-        List<String> userIds = List.of("user1");
-        when(projectRepository.findById("1")).thenReturn(Optional.empty());
+    void testAssignUsersToProject_ProjectNotFound() {
+        // Arrange
+        when(projectRepository.findById(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () ->
-                projectService.assignUsersToProject("1", userIds)
-        );
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> {
+            projectService.assignUsersToProject("nonexistent", Collections.singletonList("user3"));
+        });
     }
 
     @Test
-    void updateProjectStatus_ShouldUpdateToCompleted() {
-        when(projectRepository.findById("1")).thenReturn(Optional.of(testProject));
+    void testAssignUsersToProject_UsersAlreadyAssigned() {
+        // Arrange
+        List<String> existingUserIds = Arrays.asList("user1", "user2");
+
+        when(projectRepository.findById(anyString())).thenReturn(Optional.of(testProject));
+        when(userRepository.findAllById(anyList())).thenReturn(Arrays.asList(
+                createTestUser("user1"), createTestUser("user2")
+        ));
+
+        // Act & Assert
+        assertThrows(UserAlreadyExistsException.class, () -> {
+            projectService.assignUsersToProject("project123", existingUserIds);
+        });
+    }
+
+    @Test
+    void testUpdateProjectStatus() {
+        // Arrange
+        when(projectRepository.findById(anyString())).thenReturn(Optional.of(testProject));
         when(projectRepository.save(any(Project.class))).thenReturn(testProject);
-        when(projectMapper.toProjectDTO(any(Project.class))).thenReturn(testProjectDTO);
 
-        ProjectDTO result = projectService.updateProjectStatus("1", ProjectStatus.COMPLETED);
+        // Act
+        ProjectDTO result = projectService.updateProjectStatus("project123", ProjectStatus.COMPLETED);
 
+        // Assert
+        assertEquals(ProjectStatus.COMPLETED, testProject.getStatus());
         assertNotNull(result);
-        verify(projectRepository).save(any(Project.class));
+        verify(projectRepository, times(1)).save(testProject);
     }
 
     @Test
-    void updateProjectStatus_ShouldThrowException_WhenInvalidTransition() {
-        when(projectRepository.findById("1")).thenReturn(Optional.of(testProject));
+    void testUpdateProjectStatus_InvalidTransition() {
+        // Arrange
+        when(projectRepository.findById(anyString())).thenReturn(Optional.of(testProject));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                projectService.updateProjectStatus("1", ProjectStatus.ACTIVE)
-        );
+        // Act & Assert
+        assertThrows(IllegalArgumentException.class, () -> {
+            projectService.updateProjectStatus("project123", ProjectStatus.ACTIVE);
+        });
     }
 
     @Test
-    void getAllProjects_ShouldReturnAllProjects() {
-        List<Project> projects = List.of(testProject);
+    void testGetAllProjects() {
+        // Arrange
+        List<Project> projects = Arrays.asList(testProject);
         when(projectRepository.findAll()).thenReturn(projects);
-        when(projectMapper.toProjectDTO(any(Project.class))).thenReturn(testProjectDTO);
 
+        // Act
         List<ProjectDTO> result = projectService.getAllProjects();
 
+        // Assert
         assertNotNull(result);
-        assertFalse(result.isEmpty());
         assertEquals(1, result.size());
+        verify(projectRepository, times(1)).findAll();
+        verify(projectMapper, times(1)).toProjectDTO(any(Project.class));
     }
 
     @Test
-    void getProjectStats_ShouldReturnProjectStats() {
-        List<Project> projects = List.of(testProject);
-        List<Timesheet> timesheets = new ArrayList<>();
+    void testGetProjectStats() {
+        // Arrange
+        List<Project> projects = Collections.singletonList(testProject);
+        List<Timesheet> timesheets = Collections.singletonList(testTimesheet);
 
         when(projectRepository.findAll()).thenReturn(projects);
-        when(timesheetRepository.findByProjectId(any())).thenReturn(timesheets);
+        when(timesheetRepository.findByProjectId(anyString())).thenReturn(timesheets);
 
+        // Act
         List<ProjectStatsDTO> result = projectService.getProjectStats();
 
+        // Assert
         assertNotNull(result);
-        assertFalse(result.isEmpty());
         assertEquals(1, result.size());
-        assertEquals(testProject.getId(), result.get(0).getProjectId());
+        assertEquals("project123", result.get(0).getProjectId());
+        assertEquals("Test Project", result.get(0).getProjectName());
+        assertEquals(1, result.get(0).getActiveResourceCount());
+        assertEquals(20, result.get(0).getTotalBilledHours());
+        verify(projectRepository, times(1)).findAll();
+        verify(timesheetRepository, times(1)).findByProjectId(anyString());
     }
 
     @Test
-    void getProjectDetails_ShouldReturnProjectDetails() {
-        when(projectRepository.findById("1")).thenReturn(Optional.of(testProject));
-        when(userRepository.findAllById(any())).thenReturn(new ArrayList<>());
-        when(timesheetRepository.findByProjectId(any())).thenReturn(new ArrayList<>());
-
-        ProjectDetailDTO result = projectService.getProjectDetails("1");
-
-        assertNotNull(result);
-        assertEquals(testProject.getId(), result.getProjectId());
-        assertEquals(testProject.getName(), result.getProjectName());
-    }
-
-    @Test
-    void getProjectDetails_ShouldThrowException_WhenProjectNotFound() {
-        when(projectRepository.findById("1")).thenReturn(Optional.empty());
-
-        assertThrows(ResourceNotFoundException.class, () ->
-                projectService.getProjectDetails("1")
+    void testGetProjectDetails() {
+        // Arrange
+        List<User> assignedUsers = Arrays.asList(
+                createTestUser("user1"),
+                createTestUser("user2")
         );
+        List<Timesheet> timesheets = Collections.singletonList(testTimesheet);
+
+        when(projectRepository.findById(anyString())).thenReturn(Optional.of(testProject));
+        when(userRepository.findAllById(anyList())).thenReturn(assignedUsers);
+        when(timesheetRepository.findByProjectId(anyString())).thenReturn(timesheets);
+
+        // Act
+        ProjectDetailDTO result = projectService.getProjectDetails("project123");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("project123", result.getProjectId());
+        assertEquals("Test Project", result.getProjectName());
+        assertEquals(ProjectStatus.ACTIVE, result.getStatus());
+        assertEquals(2, result.getAssignedUsers().size());
+        assertEquals(1, result.getRecentTimesheets().size());
+        verify(projectRepository, times(1)).findById(anyString());
+        verify(userRepository, times(1)).findAllById(anyList());
+        verify(timesheetRepository, times(1)).findByProjectId(anyString());
+    }
+
+    @Test
+    void testGetProjectDetails_ProjectNotFound() {
+        // Arrange
+        when(projectRepository.findById(anyString())).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(ResourceNotFoundException.class, () -> {
+            projectService.getProjectDetails("nonexistent");
+        });
+    }
+
+    private User createTestUser(String userId) {
+        User user = new User();
+        user.setId(userId);
+        user.setUsername("user" + userId);
+        user.setEmail("user" + userId + "@example.com");
+        user.setPassword("password");
+        user.setRole(USER);
+        user.setAssignedProjects(new ArrayList<>());
+        user.setCreatedAt(LocalDateTime.now());
+        return user;
     }
 }

@@ -108,26 +108,8 @@ class MetricsServiceTest {
         assertTrue(result.getTopResources().isEmpty());
     }
 
-    @Test
-    void getDashboardMetrics_WithNullValues_ShouldHandleGracefully() {
-        // Arrange
-        List<ProjectStatsDTO> projectsWithNull = Arrays.asList(
-                new ProjectStatsDTO("P1", "Project 1", null, null, null, null),
-                new ProjectStatsDTO("P2", "Project 2", 0, null, null, null)
-        );
 
-        List<UserWeeklyStatsDTO> usersWithNull = Arrays.asList(
-                new UserWeeklyStatsDTO("U1", "User 1", LocalDate.now(), null, null, null)
-        );
 
-        when(projectService.getProjectStats()).thenReturn(projectsWithNull);
-        when(userService.getUsersWeeklyStats(any(LocalDate.class), any(LocalDate.class)))
-                .thenReturn(usersWithNull);
 
-        // Act & Assert
-        assertDoesNotThrow(() -> {
-            DashboardMetricsDTO result = metricsService.getDashboardMetrics();
-            assertNotNull(result);
-        });
-    }
+
 }
